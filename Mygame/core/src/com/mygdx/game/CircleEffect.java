@@ -8,6 +8,7 @@ public class CircleEffect {
     float liveTime, burnTime;
     Color color = new Color(1f, 0f, 0f, 1f);
     float rColor;
+    boolean destroyed;
 
     public CircleEffect(int x, int y, int liveTime){
         this.x = x;
@@ -16,11 +17,14 @@ public class CircleEffect {
         this.liveTime = liveTime;
         burnTime = Gdx.graphics.getDeltaTime();
         rColor = 0.5f;
+        destroyed = false;
     }
 
     public void update() {
         rColor = rColor - 0.001f;
         size = size + 1;
+        if (rColor < 0)
+            destroyed = true;
     }
 
     public void draw(ShapeRenderer shape){

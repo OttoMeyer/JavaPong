@@ -29,14 +29,17 @@ public class Ball {
         pong = Gdx.audio.newSound(Gdx.files.internal(path));
     }
 
-    public void update() {
+    public void update(StateMachine stateMachine) {
         x += xSpeed;
         y += ySpeed;
         if (x < size || x > Gdx.graphics.getWidth() - size) {
             xSpeed = -xSpeed;
         }
-        if (y < size || y > Gdx.graphics.getHeight()- size) {
+        if (y > Gdx.graphics.getHeight()- size ) {
             ySpeed = -ySpeed;
+        }
+        if (y < size){
+            stateMachine.startOverGame();
         }
     }
     public void draw(ShapeRenderer shape){
@@ -46,6 +49,7 @@ public class Ball {
     public void checkCollision(Paddle paddle) {
         if(collidesWith(paddle)){
             ySpeed = -ySpeed;
+            xSpeed = xSpeed + ((x + size) - (paddle.x + paddle.xSize/2))/20;
         }
     }
 
