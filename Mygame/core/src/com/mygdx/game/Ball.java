@@ -58,8 +58,8 @@ public class Ball {
             pong.play(soundMod);
             int xMidle = x - size;
             int yMidle = y - size;
-            int xCube = block.x - block.height/2;
-            int yCube = block.y - block.width/2;
+            int xCube = (int)(block.x - block.height/2);
+            int yCube = (int)(block.y - block.width/2);
             if (Math.abs((yMidle - yCube)/(block.width/2)) < Math.abs((xMidle - xCube)/(block.height/2))){
                 ySpeed = - ySpeed;
             }

@@ -1,8 +1,10 @@
 /*
 TO DO LIST
 # Уничтожать эфекты кругов когда они становятся не нужны [X]
-# Счётчмк очков [ ]
-# Анимация старта игры [ ]
+# Счётчмк очков [V]
+	# Сделать лучше [ ]
+		Чувствую нужно будет разобраться как работают текстуры перед этим.
+# Анимация старта игры [X]
 # Переработать колизию [ ]
 # Переработать отскок мяча от рокетки [ ]
 # Тряска соседних блоков при ударе [ ]
@@ -24,18 +26,17 @@ package com.mygdx.game;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.math.MathUtils;
 
-import java.text.Format;
 import java.util.ArrayList;
 import java.util.Random;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.Input.Keys;
+
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 public class MyGdxGame extends ApplicationAdapter {
 	ShapeRenderer shape;
@@ -48,37 +49,31 @@ public class MyGdxGame extends ApplicationAdapter {
 	public BitmapFont font;
 	public boolean flagOver;
 	public StateMachine stateMachine;
-	public BitmapFont.BitmapFontData data;
-	public TextureRegion textureRegion;
-	public Texture texture;
-	public Pixmap pixmap;
 	int score = 0;
+
+	GlyphLayout glyphLayout;
 
 	@Override
 	public void create() { // Старт игры
 		stateMachine = new StateMachine();
-		ball = new Ball(Gdx.graphics.getWidth()/2, Gdx.graphics.getHeight()/2, 10,3, 3);
 		shape = new ShapeRenderer();
-		ball.loadSound("pong.wav");
 		int blockWidth = 63;
 		int blockHeight = 20;
 		for (int y = Gdx.graphics.getHeight()/2; y < Gdx.graphics.getHeight(); y += blockHeight + 10) {
 			for (int x = 0; x < Gdx.graphics.getWidth(); x += blockWidth + 10) {
-				blocks.add(new Block(x, y, blockWidth, blockHeight, new Color(1f, 1f, 1f, 0.5f)));
+				blocks.add(new Block(x, y+1000, y, blockWidth, blockHeight, new Color(1f, 1f, 1f, 0.5f)));
 			}
 		}
-		pixmap = new Pixmap(100, 50, Pixmap.Format.Alpha);
-		texture = new Texture(pixmap);
-		data = new BitmapFont.BitmapFontData();
 		batch = new SpriteBatch();
-		textureRegion = new TextureRegion(texture);
-		font = new BitmapFont(data, textureRegion, true);
-		flagOver = false;
+		font = new BitmapFont();
+		glyphLayout = new GlyphLayout();
 	}
 
 	@Override
 	public void render() { // Процесс игры
-		if(stateMachine.goGame){ // Игра в процессе
+		if(stateMachine.startGame){
+			startGame();
+		}else if(stateMachine.goGame){ // Игра в процессе
 			activeGame();
 			isWin();
 		}else if(stateMachine.overGame){ // Проигрыш
@@ -113,7 +108,7 @@ public class MyGdxGame extends ApplicationAdapter {
 			Block b = blocks.get(i);
 			if (b.destroyed) {
 				score += 100;
-				circleEffects.add(new CircleEffect(b.x+b.width/2, b.y+ b.height/2, 10));
+				circleEffects.add(new CircleEffect((int)b.x+b.width/2, (int)b.y+ b.height/2, 10));
 				blocks.remove(b);
 				i--;
 
@@ -125,7 +120,7 @@ public class MyGdxGame extends ApplicationAdapter {
 		ball.draw(shape);
 
 		for (Block block : blocks) { // Отображение блоков
-			block.draw(shape);
+			block.drawAnimatic(shape);
 		}
 		paddle.update(); // Логика и отображение ракетки
 		paddle.draw(shape);
@@ -133,6 +128,7 @@ public class MyGdxGame extends ApplicationAdapter {
 
 		batch.begin();
 		font.setColor(Color.ROYAL);
+		font.getData().setScale(3);
 		font.draw(batch, String.valueOf(score), 10, Gdx.graphics.getHeight()-10);
 		batch.end();
 	}
@@ -141,18 +137,23 @@ public class MyGdxGame extends ApplicationAdapter {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		batch.begin();
 		if(stateMachine.overGame){
+			font.setColor(Color.RED);
+			glyphLayout.setText(font, "Game Over");
 			font.draw(batch, "Game Over",
-					Gdx.graphics.getWidth()/2 + font.getCapHeight()/2,
-					Gdx.graphics.getHeight()/2+font.getLineHeight()/2);
+					Gdx.graphics.getWidth()/2 - glyphLayout.width/2,
+					Gdx.graphics.getHeight()/2 + glyphLayout.height/2);
 			score = 0;
 		}
-		else
+		else {
+			font.setColor(Color.GREEN);
+			glyphLayout.setText(font, "You win");
 			font.draw(batch, "You win",
-					Gdx.graphics.getWidth()/2 + font.getCapHeight()/2,
-					Gdx.graphics.getHeight()/2+font.getLineHeight()/2);
+					Gdx.graphics.getWidth()/2 - glyphLayout.width/2,
+					Gdx.graphics.getHeight()/2 + glyphLayout.height/2);
+		}
 		batch.end();
 		if (Gdx.input.isKeyPressed(Keys.ANY_KEY)){
-			stateMachine.startGoGame();
+			stateMachine.startStartGame();
 			destroyAll();
 			create();
 		}
@@ -166,6 +167,36 @@ public class MyGdxGame extends ApplicationAdapter {
 	public void isWin(){ // Условие победы
 		if (blocks.size() == 0){
 			stateMachine.startWinGame();
+		}
+	}
+
+	public void startGame(){
+		boolean flag = true;
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		shape.begin(ShapeRenderer.ShapeType.Filled);
+
+		for (Block block : blocks) { // Отображение блоков
+			block.drawAnimatic(shape);
+			if(Math.abs(block.yTarget - block.y) > 5){
+				flag = false;
+			}
+		}
+
+		paddle.update(); // Логика и отображение ракетки
+		paddle.draw(shape);
+		shape.end();
+
+		batch.begin();
+		font.setColor(Color.ROYAL);
+		font.draw(batch, String.valueOf(score), 10, Gdx.graphics.getHeight()-10);
+		batch.end();
+
+		if(flag)
+		{
+			stateMachine.startGoGame();
+			ball = new Ball(Gdx.graphics.getWidth()/2, Gdx.graphics.getHeight()/3,
+					10,MathUtils.random(-3,3), MathUtils.random(-3,-1));
+			ball.loadSound("pong.wav");
 		}
 	}
 }
